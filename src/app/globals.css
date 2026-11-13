@@ -1,0 +1,93 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ── Kama OTT site look (all pages except /auth, which carries its own styles) ── */
+.k-body {
+  font-family: var(--font-poppins), var(--font-mukta), system-ui, sans-serif;
+  background: #0b0507;
+  color: #f6ecdd;
+}
+/* Soft crimson + gold light at the top of every page, so big dark areas feel warm, not flat */
+.k-body:not(.k-legacy) {
+  background:
+    radial-gradient(1200px 520px at 15% -10%, rgba(200, 16, 46, 0.16), transparent 60%),
+    radial-gradient(900px 420px at 95% -5%, rgba(212, 162, 76, 0.1), transparent 60%),
+    #0b0507;
+  background-attachment: fixed;
+}
+.k-display {
+  font-family: var(--font-bebas), 'Arial Narrow', sans-serif;
+  font-weight: 400;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  line-height: 0.95;
+}
+/* Gold-foil text (wordmark, plan prices) */
+.k-gold {
+  background: linear-gradient(180deg, #ffe08a 0%, #f5b83d 50%, #c98a1e 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+/* Admin / media-buyer panels keep the original look */
+.k-legacy.k-body {
+  background: #0c0809;
+  color: #f5efe6;
+}
+.k-legacy .k-display {
+  font-family: var(--font-anton), Impact, 'Arial Narrow', sans-serif;
+  letter-spacing: 0.01em;
+}
+.k-hindi {
+  font-family: var(--font-mukta), sans-serif;
+}
+.k-noscroll {
+  scrollbar-width: none;
+}
+.k-noscroll::-webkit-scrollbar {
+  display: none;
+}
+/* Paper grain over flat ink — keeps big dark areas from looking empty */
+.k-grain::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.05;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+@keyframes kRise {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.k-rise {
+  animation: kRise 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .k-rise { animation: none; }
+}
