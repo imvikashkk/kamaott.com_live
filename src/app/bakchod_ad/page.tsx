@@ -1551,7 +1551,7 @@ export default function AdminDashboard() {
                 <table className="w-full text-left min-w-[900px]">
                   <thead>
                     <tr style={{ borderBottom: '1px solid #F1EDE6', background: '#FAF8F4' }}>
-                      {['SN', 'User ID', 'Mobile', 'Amount', 'Status', 'MediaBuyer', 'Campaign', 'Meta Cmp Name / ID', 'Date & Time'].map((h) => (
+                      {['SN', 'User ID', 'Mobile', 'Amount', 'Status', 'MediaBuyer', 'Campaign', 'Meta Cmp Name / ID', 'Adset Name / ID', 'Ad Name / ID', 'Date & Time'].map((h) => (
                         <th key={h} className="px-5 py-3 text-[9px] font-bold uppercase tracking-[.16em] text-stone-400">{h}</th>
                       ))}
                     </tr>
@@ -1560,7 +1560,7 @@ export default function AdminDashboard() {
                     {loading ? (
                       Array.from({ length: 8 }).map((_, i) => (
                         <tr key={i} style={{ borderBottom: '1px solid #FAF8F4' }}>
-                          {[30, 60, 110, 55, 70, 90, 160, 140, 130].map((w, j) => (
+                          {[30, 60, 110, 55, 70, 90, 160, 140, 140, 140, 130].map((w, j) => (
                             <td key={j} className="px-5 py-3.5">
                               <div className="h-4 rounded-lg animate-pulse bg-stone-100" style={{ width: w }} />
                             </td>
@@ -1568,13 +1568,13 @@ export default function AdminDashboard() {
                         </tr>
                       ))
                     ) : rows.length === 0 ? (
-                      <tr><td colSpan={9} className="px-5 py-10 text-center text-[13px] text-stone-400">No payments found</td></tr>
+                      <tr><td colSpan={11} className="px-5 py-10 text-center text-[13px] text-stone-400">No payments found</td></tr>
                     ) : (
                       rows.map((row, i) => (
                         <tr key={`${row.user_id}-${row.txn_id}-${i}`} style={{ borderBottom: '1px solid #FAF8F4', transition: 'background .12s' }}>
                           <td className="px-5 py-3.5"><span className="text-[12px] font-semibold text-stone-300">{(page - 1) * PAGE_SIZE + i + 1}</span></td>
                           <td className="px-5 py-3.5"><span className="text-[12px] font-bold text-stone-400">#{row.user_id}</span></td>
-                          <td className="px-5 py-3.5"><span className="text-[13px] font-semibold text-stone-800">+91 {row.user_number}</span></td>
+                          <td className="px-5 py-3.5"><span className="whitespace-nowrap text-[13px] font-semibold text-stone-800">+91 {row.user_number}</span></td>
                           <td className="px-5 py-3.5"><span className="text-[13px] font-black" style={{ color: STATUS_CFG[row.payment_status]?.color ?? '#5A5148' }}>₹{Number(row.user_payment).toLocaleString('en-IN')}</span></td>
                           <td className="px-5 py-3.5"><StatusBadge status={row.payment_status} /></td>
                           <td className="px-5 py-3.5">
@@ -1607,22 +1607,44 @@ export default function AdminDashboard() {
                                 {row.meta_campaign_name && (
                                   <span className="text-[10px] font-semibold text-stone-600">{row.meta_campaign_name}</span>
                                 )}
-                                {(row.meta_adset_name || row.meta_adset_id) && (
-                                  <span className="text-[10px] text-stone-500" title={row.meta_adset_id ?? ''}>
-                                    <span className="font-bold text-stone-400">Adset:</span> {row.meta_adset_name ?? row.meta_adset_id}
+                              </div>
+                            ) : (
+                              <span className="text-[12px] text-stone-300">—</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5 max-w-[180px]">
+                            {row.meta_adset_id || row.meta_adset_name ? (
+                              <div className="flex flex-col gap-1">
+                                {row.meta_adset_id && (
+                                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded inline-block w-fit select-all" style={{ background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE' }}>
+                                    {row.meta_adset_id}
                                   </span>
                                 )}
-                                {(row.meta_ad_name || row.meta_ad_id) && (
-                                  <span className="text-[10px] text-stone-500" title={row.meta_ad_id ?? ''}>
-                                    <span className="font-bold text-stone-400">Ad:</span> {row.meta_ad_name ?? row.meta_ad_id}
-                                  </span>
+                                {row.meta_adset_name && (
+                                  <span className="text-[10px] font-semibold text-stone-600">{row.meta_adset_name}</span>
                                 )}
                               </div>
                             ) : (
                               <span className="text-[12px] text-stone-300">—</span>
                             )}
                           </td>
-                          <td className="px-5 py-3.5"><span className="text-[11px] text-stone-400">{formatDate(row.date_time)}</span></td>
+                          <td className="px-5 py-3.5 max-w-[180px]">
+                            {row.meta_ad_id || row.meta_ad_name ? (
+                              <div className="flex flex-col gap-1">
+                                {row.meta_ad_id && (
+                                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded inline-block w-fit select-all" style={{ background: '#EFF6FF', color: '#1D4ED8', border: '1px solid #BFDBFE' }}>
+                                    {row.meta_ad_id}
+                                  </span>
+                                )}
+                                {row.meta_ad_name && (
+                                  <span className="text-[10px] font-semibold text-stone-600">{row.meta_ad_name}</span>
+                                )}
+                              </div>
+                            ) : (
+                              <span className="text-[12px] text-stone-300">—</span>
+                            )}
+                          </td>
+                          <td className="px-5 py-3.5"><span className="whitespace-nowrap text-[11px] text-stone-400">{formatDate(row.date_time)}</span></td>
                         </tr>
                       ))
                     )}
