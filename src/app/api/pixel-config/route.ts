@@ -1,18 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import pool from '@/lib/db';
+import { resolvePixelFor } from '@/lib/resolvePixel';
 
+// ?c=<slug>                         → that slug's pixel
+// ?ad=<meta ad id>&cid=<campaign id> → for Meta ad clicks without ?c= (see resolvePixelFor)
 export async function GET(req: NextRequest) {
-  const slug = req.nextUrl.searchParams.get('c');
-
+  const sp = req.nextUrl.searchParams;
   try {
-    if (!slug) return NextResponse.json({ pixelId: null });
-
-    const res = await pool.query(`SELECT pixel_id FROM pixels WHERE slug = $1`, [slug]);
-    const pixelId = res.rows[0]?.pixel_id ?? null;
-    return NextResponse.json({ pixelId }, {
-      headers: { 'Cache-Control': 'public, max-age=60' },
-    });
+    const r = await resolvePixelFor({ slug: sp.get('c'), adId: sp.get('ad'), campaignId: sp.get('cid') });
+    return NextResponse.json(
+      { pixelId: r.pixelId, slug: r.slug, campaignName: r.campaignName },
+      { headers: { 'Cache-Control': 'public, max-age=60' } },
+    );
   } catch {
-    return NextResponse.json({ pixelId: null });
+    return NextResponse.json({ pixelId: null, slug: null, campaignName: null });
   }
 }

@@ -55,8 +55,8 @@ export async function POST(req: NextRequest) {
     const plan = planRes.rows[0];
     const user = userRes.rows[0];
 
-    // Fallback to stored first-touch attribution if current session has no campaign
-    if (!campaignSlug && user.mobile) {
+    // Fallback to stored attribution if this session has no campaign or no ad click cookies
+    if ((!campaignSlug || !fbc || !fbp) && user.mobile) {
       const attrRes = await pool.query(
         `SELECT campaign_slug, meta_campaign_id, meta_campaign_name, meta_adset_id, meta_adset_name, meta_ad_id, meta_ad_name, fbp, fbc
          FROM phone_attributions WHERE mobile = $1`,
@@ -64,13 +64,15 @@ export async function POST(req: NextRequest) {
       );
       if (attrRes.rows.length > 0) {
         const attr = attrRes.rows[0];
-        campaignSlug = attr.campaign_slug || campaignSlug;
-        metaCampaignId = attr.meta_campaign_id || metaCampaignId;
-        metaCampaignName = attr.meta_campaign_name || metaCampaignName;
-        metaAdsetId = attr.meta_adset_id || metaAdsetId;
-        metaAdsetName = attr.meta_adset_name || metaAdsetName;
-        metaAdId = attr.meta_ad_id || metaAdId;
-        metaAdName = attr.meta_ad_name || metaAdName;
+        if (!campaignSlug) {
+          campaignSlug = attr.campaign_slug || campaignSlug;
+          metaCampaignId = attr.meta_campaign_id || metaCampaignId;
+          metaCampaignName = attr.meta_campaign_name || metaCampaignName;
+          metaAdsetId = attr.meta_adset_id || metaAdsetId;
+          metaAdsetName = attr.meta_adset_name || metaAdsetName;
+          metaAdId = attr.meta_ad_id || metaAdId;
+          metaAdName = attr.meta_ad_name || metaAdName;
+        }
         if (!fbp && attr.fbp) fbp = attr.fbp;
         if (!fbc && attr.fbc) fbc = attr.fbc;
       }
