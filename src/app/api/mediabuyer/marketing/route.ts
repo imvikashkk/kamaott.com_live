@@ -52,19 +52,19 @@ export async function GET(req: NextRequest) {
         FROM payments WHERE ${overviewWhere}
       `),
       pool.query(`
-        SELECT p.id, p.slug, p.label, p.pixel_id, p.ad_account_id,
+        SELECT p.id, p.slug, p.label, p.pixel_id,
                COUNT(pay.id)                                           AS purchases,
                COUNT(pay.id) FILTER (WHERE pay.capi_sent = true)     AS capi_sent,
                COUNT(pay.id) FILTER (WHERE pay.capi_sent = false)    AS capi_issues
         FROM pixels p
         LEFT JOIN payments pay ON pay.campaign_slug = p.slug AND ${joinFilter}
         WHERE 1=1 ${pixelWhere}
-        GROUP BY p.id, p.slug, p.label, p.pixel_id, p.ad_account_id
+        GROUP BY p.id, p.slug, p.label, p.pixel_id
         ORDER BY purchases DESC
       `),
       pool.query(`
         SELECT pay.meta_campaign_id, pay.meta_campaign_name, pay.campaign_slug,
-               p.label AS pixel_label, p.pixel_id, p.ad_account_id,
+               p.label AS pixel_label, p.pixel_id,
                COUNT(pay.id)                                           AS purchases,
                COUNT(pay.id) FILTER (WHERE pay.capi_sent = true)     AS capi_sent,
                COUNT(pay.id) FILTER (WHERE pay.capi_sent = false)    AS capi_issues
@@ -72,11 +72,11 @@ export async function GET(req: NextRequest) {
         LEFT JOIN pixels p ON p.slug = pay.campaign_slug
         WHERE ${metaWhere} AND pay.meta_campaign_id IS NOT NULL
         GROUP BY pay.meta_campaign_id, pay.meta_campaign_name, pay.campaign_slug,
-                 p.label, p.pixel_id, p.ad_account_id
+                 p.label, p.pixel_id
         ORDER BY purchases DESC
       `),
       pool.query(
-        `SELECT id, slug, label, pixel_id, ad_account_id, is_default
+        `SELECT id, slug, label, pixel_id, is_default
          FROM pixels WHERE client_id = $1 ORDER BY created_at DESC`,
         [clientId],
       ),

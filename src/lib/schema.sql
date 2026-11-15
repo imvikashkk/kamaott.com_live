@@ -89,6 +89,10 @@ ALTER TABLE payments ADD COLUMN IF NOT EXISTS capi_sent           BOOLEAN NOT NU
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS capi_error          TEXT;
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS meta_campaign_id    VARCHAR(50);
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS meta_campaign_name  VARCHAR(200);
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS meta_adset_id       VARCHAR(50);
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS meta_adset_name     VARCHAR(200);
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS meta_ad_id          VARCHAR(50);
+ALTER TABLE payments ADD COLUMN IF NOT EXISTS meta_ad_name        VARCHAR(200);
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS fbp                 VARCHAR(200);
 ALTER TABLE payments ADD COLUMN IF NOT EXISTS fbc                 VARCHAR(200);
 -- Legacy rename (Postgres has no RENAME COLUMN IF EXISTS)
@@ -127,6 +131,10 @@ CREATE TABLE IF NOT EXISTS phone_attributions (
   fbc                VARCHAR(200),
   created_at         TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
+ALTER TABLE phone_attributions ADD COLUMN IF NOT EXISTS meta_adset_id   VARCHAR(50);
+ALTER TABLE phone_attributions ADD COLUMN IF NOT EXISTS meta_adset_name VARCHAR(200);
+ALTER TABLE phone_attributions ADD COLUMN IF NOT EXISTS meta_ad_id      VARCHAR(50);
+ALTER TABLE phone_attributions ADD COLUMN IF NOT EXISTS meta_ad_name    VARCHAR(200);
 
 -- ── Gateway order id (UPI gateway) ──────────────────────────────
 

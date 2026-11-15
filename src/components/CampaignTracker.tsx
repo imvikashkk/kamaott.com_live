@@ -57,6 +57,10 @@ export default function CampaignTracker() {
     const isResolved = (v: string) => !v.includes('{{');
     if (metaCampaignId   && isResolved(metaCampaignId))   localStorage.setItem('mr_meta_campaign_id',   metaCampaignId);
     if (metaCampaignName && isResolved(metaCampaignName)) localStorage.setItem('mr_meta_campaign_name', metaCampaignName);
+    for (const k of ['meta_adset_id', 'meta_adset_name', 'meta_ad_id', 'meta_ad_name']) {
+      const v = params.get(k);
+      if (v && isResolved(v)) localStorage.setItem(`mr_${k}`, v);
+    }
 
     const campaignSlug = slug || localStorage.getItem('mr_campaign') || '';
     if (!campaignSlug) return;

@@ -20,12 +20,12 @@ const STATUS_CFG: Record<string, { bg: string; color: string; border: string; la
 };
 
 interface Profile  { id: number; name: string; email: string | null }
-interface PayRow   { id: number; user_mobile: string; amount: number; status: string; campaign_slug: string | null; pixel_id: string | null; ad_account_id: string | null; meta_campaign_id: string | null; meta_campaign_name: string | null; created_at: string }
+interface PayRow   { id: number; user_mobile: string; amount: number; status: string; campaign_slug: string | null; pixel_id: string | null; meta_campaign_id: string | null; meta_campaign_name: string | null; meta_adset_id: string | null; meta_adset_name: string | null; meta_ad_id: string | null; meta_ad_name: string | null; created_at: string }
 interface PayStats { total: string; successful: string; pending: string; failed: string; revenue: string }
 interface MktOverview { total_purchases: string; capi_sent: string; capi_issues: string }
-interface PixelStat   { id: number; slug: string; label: string; pixel_id: string; ad_account_id: string | null; purchases: string; capi_sent: string; capi_issues: string }
-interface MetaStat    { meta_campaign_id: string; meta_campaign_name: string | null; campaign_slug: string | null; pixel_label: string | null; pixel_id: string | null; ad_account_id: string | null; purchases: string; capi_sent: string; capi_issues: string }
-interface Pixel       { id: number; slug: string; label: string; pixel_id: string; access_token: string; ad_account_id: string | null; is_default: boolean }
+interface PixelStat   { id: number; slug: string; label: string; pixel_id: string; purchases: string; capi_sent: string; capi_issues: string }
+interface MetaStat    { meta_campaign_id: string; meta_campaign_name: string | null; campaign_slug: string | null; pixel_label: string | null; pixel_id: string | null; purchases: string; capi_sent: string; capi_issues: string }
+interface Pixel       { id: number; slug: string; label: string; pixel_id: string; access_token: string; is_default: boolean }
 
 const MB_NAV: { key: MainTab; label: string; icon: string }[] = [
   { key: 'payments',  label: 'Payments',  icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z' },
@@ -37,7 +37,7 @@ const MB_TITLES: Record<MainTab, [string, string]> = {
   marketing: ['Marketing', 'Campaign links, pixels aur conversions.'],
 };
 
-const EMPTY_PX = { slug: '', label: '', pixel_id: '', access_token: '', ad_account_id: '' };
+const EMPTY_PX = { slug: '', label: '', pixel_id: '', access_token: '' };
 
 const PAGE_SIZE = 100;
 
@@ -160,7 +160,7 @@ export default function MBDashboard() {
     setPxSaving(true);
     const url    = editPx ? `/api/mediabuyer/pixels/${editPx.id}` : '/api/mediabuyer/pixels';
     const method = editPx ? 'PUT' : 'POST';
-    const res    = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ ...pxForm, ad_account_id: pxForm.ad_account_id || null }) });
+    const res    = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(pxForm) });
     const json   = await res.json();
     setPxSaving(false);
     if (json.success) {
@@ -181,7 +181,7 @@ export default function MBDashboard() {
   }
 
   const metaUrl = (slug: string) =>
-    `${baseUrl}/?c=${slug}&meta_campaign_id={{campaign.id}}&meta_campaign_name={{campaign.name}}`;
+    `${baseUrl}/?c=${slug}&meta_campaign_id={{campaign.id}}&meta_campaign_name={{campaign.name}}&meta_adset_id={{adset.id}}&meta_adset_name={{adset.name}}&meta_ad_id={{ad.id}}&meta_ad_name={{ad.name}}`;
 
   function copyLink(slug: string) {
     navigator.clipboard.writeText(metaUrl(slug)).then(() => {
@@ -320,9 +320,6 @@ export default function MBDashboard() {
                               <div className="flex flex-col gap-1">
                                 <span className="text-[10px] font-mono text-stone-500">?c={row.campaign_slug}</span>
                                 {row.pixel_id && <span className="text-[9px] font-mono text-stone-400">{row.pixel_id}</span>}
-                                {row.ad_account_id && (
-                                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded inline-block w-fit" style={{ background: '#FFF7ED', color: '#C2410C', border: '1px solid #FED7AA' }}>{row.ad_account_id}</span>
-                                )}
                               </div>
                             ) : <span className="text-[12px] text-stone-300">—</span>}
                           </td>
@@ -334,6 +331,16 @@ export default function MBDashboard() {
                                 </span>
                                 {row.meta_campaign_name && (
                                   <span className="text-[10px] font-semibold text-stone-600">{row.meta_campaign_name}</span>
+                                )}
+                                {(row.meta_adset_name || row.meta_adset_id) && (
+                                  <span className="text-[10px] text-stone-500" title={row.meta_adset_id ?? ''}>
+                                    <span className="font-bold text-stone-400">Adset:</span> {row.meta_adset_name ?? row.meta_adset_id}
+                                  </span>
+                                )}
+                                {(row.meta_ad_name || row.meta_ad_id) && (
+                                  <span className="text-[10px] text-stone-500" title={row.meta_ad_id ?? ''}>
+                                    <span className="font-bold text-stone-400">Ad:</span> {row.meta_ad_name ?? row.meta_ad_id}
+                                  </span>
                                 )}
                               </div>
                             ) : <span className="text-[12px] text-stone-300">—</span>}
@@ -460,7 +467,7 @@ export default function MBDashboard() {
                       <table className="w-full text-left">
                         <thead>
                           <tr style={{ borderBottom: '1px solid #F1EDE6', background: '#FAF8F4' }}>
-                            {['Campaign', 'Pixel / Ad Account', 'Purchases', 'CAPI', 'Issues'].map((h) => (
+                            {['Campaign', 'Pixel', 'Purchases', 'CAPI', 'Issues'].map((h) => (
                               <th key={h} className="px-4 py-2.5 text-[9px] font-bold uppercase tracking-[.16em] text-stone-400">{h}</th>
                             ))}
                           </tr>
@@ -482,9 +489,6 @@ export default function MBDashboard() {
                               </td>
                               <td className="px-4 py-3">
                                 <span className="text-[10px] text-stone-400 font-mono block">{row.pixel_id}</span>
-                                {row.ad_account_id && (
-                                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded mt-1 inline-block" style={{ background: '#FFF7ED', color: '#C2410C', border: '1px solid #FED7AA' }}>{row.ad_account_id}</span>
-                                )}
                               </td>
                               <td className="px-4 py-3 text-[13px] font-black text-stone-800">{row.purchases}</td>
                               <td className="px-4 py-3 text-[12px] font-bold" style={{ color: BLUE }}>{row.capi_sent}</td>
@@ -507,7 +511,7 @@ export default function MBDashboard() {
                       <table className="w-full text-left">
                         <thead>
                           <tr style={{ borderBottom: '1px solid #F1EDE6', background: '#FAF8F4' }}>
-                            {['Meta Cmp Name / ID', 'Campaign', 'Pixel / Ad Account', 'Purchases', 'CAPI', 'Issues'].map((h) => (
+                            {['Meta Cmp Name / ID', 'Campaign', 'Pixel', 'Purchases', 'CAPI', 'Issues'].map((h) => (
                               <th key={h} className="px-4 py-2.5 text-[9px] font-bold uppercase tracking-[.16em] text-stone-400">{h}</th>
                             ))}
                           </tr>
@@ -537,9 +541,6 @@ export default function MBDashboard() {
                               </td>
                               <td className="px-4 py-3">
                                 <span className="text-[10px] text-stone-400 font-mono block">{row.pixel_id ?? '—'}</span>
-                                {row.ad_account_id && (
-                                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded mt-1 inline-block" style={{ background: '#FFF7ED', color: '#C2410C', border: '1px solid #FED7AA' }}>{row.ad_account_id}</span>
-                                )}
                               </td>
                               <td className="px-4 py-3 text-[13px] font-black text-stone-800">{row.purchases}</td>
                               <td className="px-4 py-3 text-[12px] font-bold" style={{ color: BLUE }}>{row.capi_sent}</td>
@@ -565,7 +566,6 @@ export default function MBDashboard() {
                       {[
                         { label: 'Label',   key: 'label',   placeholder: 'e.g. Summer Sale Campaign A', type: 'text' },
                         { label: 'Pixel ID',key: 'pixel_id',placeholder: '15-16 digit pixel ID',        type: 'text' },
-                        { label: 'Ad Account ID (optional)', key: 'ad_account_id', placeholder: 'act_123456789', type: 'text' },
                       ].map(({ label, key, placeholder, type }) => (
                         <div key={key}>
                           <label className="block text-[10px] font-bold text-stone-500 uppercase tracking-wide mb-1">{label}</label>
@@ -667,14 +667,11 @@ export default function MBDashboard() {
                                 <div className="flex items-center gap-2 flex-wrap mb-1">
                                   <span className="text-[13px] font-bold text-stone-800">{px.label}</span>
                                   <span className="text-[9px] font-mono px-1.5 py-0.5 rounded" style={{ background: '#FAF8F4', color: '#776D62', border: '1px solid #E6E0D6' }}>{px.slug}</span>
-                                  {px.ad_account_id && (
-                                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded" style={{ background: '#FFF7ED', color: '#C2410C', border: '1px solid #FED7AA' }}>{px.ad_account_id}</span>
-                                  )}
                                 </div>
                                 <div className="flex items-center gap-2 mt-1">
                                   <code className="text-[11px] px-2 py-1 rounded-[6px] font-mono truncate select-all flex-1 min-w-0"
                                     style={{ background: BLUE_LT, color: BLUE, border: `1px solid ${BLUE_MD}` }}>
-                                    {baseUrl}/?c={px.slug}&amp;meta_campaign_id={'{{campaign.id}}'}&amp;meta_campaign_name={'{{campaign.name}}'}
+                                    {metaUrl(px.slug)}
                                   </code>
                                 </div>
                                 <div className="flex items-center gap-2 mt-1 flex-wrap">
@@ -689,7 +686,7 @@ export default function MBDashboard() {
                                     ? <><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2.5} strokeLinecap="round"><polyline points="20 6 9 17 4 12" /></svg> Copied!</>
                                     : <><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round"><rect x="9" y="9" width="13" height="13" rx="2" /><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1" /></svg> Copy</>}
                                 </button>
-                                <button onClick={() => { setEditPx(px); setPxForm({ slug: px.slug, label: px.label, pixel_id: px.pixel_id, access_token: px.access_token ?? '', ad_account_id: px.ad_account_id ?? '' }); setShowToken(false); setShowPxForm(true); }}
+                                <button onClick={() => { setEditPx(px); setPxForm({ slug: px.slug, label: px.label, pixel_id: px.pixel_id, access_token: px.access_token ?? '' }); setShowToken(false); setShowPxForm(true); }}
                                   className="px-2.5 py-1.5 rounded-[7px] text-[10px] font-bold text-stone-600 hover:bg-stone-100 transition-colors"
                                   style={{ border: '1.5px solid #E6E0D6' }}>Edit</button>
                                 <button onClick={() => setDeleteConfirm(px.id)}
