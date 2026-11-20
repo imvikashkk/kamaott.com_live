@@ -8,12 +8,12 @@ export default function AuthPage() {
     <>
       <AuthRedirect />
       <AuthShell>
-        <div className="text-center">
+        <div className="text-center" style={{ textShadow: '0 2px 10px rgba(0,0,0,.8)' }}>
           <BrandLogo />
-          <h1 className="mt-5 text-[26px] font-extrabold leading-tight sm:text-[28px]">
+          <h1 className="mt-5 text-[28px] font-extrabold leading-tight">
             <Hot>Premium</Hot> Originals, <span className="whitespace-nowrap">Made for You</span>
           </h1>
-          <p className="mt-2 text-sm font-medium text-white/65">Sign in with your mobile number to start watching</p>
+          <p className="mt-2 text-sm font-medium text-white/75">Exclusive series · Full HD · Watch anytime, anywhere</p>
         </div>
 
         <MobileLoginForm className="mt-6" />

@@ -28,12 +28,10 @@ interface PaymentRow {
   campaign_slug: string | null;
   media_buyer_name: string | null;
   pixel_id: string | null;
+  ad_account_id: string | null;
   meta_campaign_id: string | null;
   meta_campaign_name: string | null;
-  meta_adset_id: string | null;
-  meta_adset_name: string | null;
-  meta_ad_id: string | null;
-  meta_ad_name: string | null; attribution_via: string | null; ad_mapping_id: number | null;
+  meta_adset_id: string | null; meta_adset_name: string | null; meta_ad_id: string | null; meta_ad_name: string | null; attribution_via: string | null; ad_mapping_id: number | null;
 }
 
 interface Stats {
@@ -61,6 +59,7 @@ interface Pixel {
   label: string;
   pixel_id: string;
   access_token: string;
+  ad_account_id: string | null;
   is_default: boolean;
   client_id: number | null;
   client_name: string | null;
@@ -78,6 +77,7 @@ interface PixelStat {
   slug: string;
   label: string;
   pixel_id: string;
+  ad_account_id: string | null;
   is_default: boolean;
   client_id: number | null;
   client_name: string | null;
@@ -92,6 +92,7 @@ interface MetaCampaignStat {
   campaign_slug: string | null;
   pixel_label: string | null;
   pixel_id: string | null;
+  ad_account_id: string | null;
   client_name: string | null;
   purchases: string;
   capi_sent: string;
@@ -218,7 +219,7 @@ function ClientForm({ initial = EMPTY_CLIENT, isEdit = false, onSave, onCancel, 
 }
 
 /* ── Pixel Form ─────────────────────────────────────────── */
-const EMPTY_FORM = { slug: '', label: '', pixel_id: '', access_token: '', client_id: '' };
+const EMPTY_FORM = { slug: '', label: '', pixel_id: '', access_token: '', ad_account_id: '', client_id: '' };
 
 function PixelForm({
   initial, onSave, onCancel, saving, clients,
@@ -282,6 +283,11 @@ function PixelForm({
               }
             </button>
           </div>
+        </div>
+        <div>
+          <label className={labelCls}>Ad Account ID <span className="text-stone-300 font-normal normal-case tracking-normal">(optional)</span></label>
+          <input value={form.ad_account_id} onChange={(e) => set('ad_account_id', e.target.value.trim())}
+            placeholder="act_123456789" autoComplete="new-password" name="px-ad-account" className={inputCls} style={inputStyle} />
         </div>
       </div>
 
@@ -842,6 +848,7 @@ function MarketingPanel() {
   const [byMetaCampaign, setByMetaCampaign] = useState<MetaCampaignStat[]>([]);
   const [clients, setClients]   = useState<Client[]>([]);
   const [pixels, setPixels]         = useState<Pixel[]>([]);
+  const [adAccountFilter, setAdAccountFilter]     = useState('');
   const [pixelClientFilter, setPixelClientFilter] = useState('');
   const [pixelSlugSearch, setPixelSlugSearch]     = useState('');
   const [pxList, setPxList]                       = useState<Pixel[]>([]);
@@ -877,13 +884,14 @@ function MarketingPanel() {
     if (json.success) setClients(json.data);
   }, []);
 
-  const fetchStats = useCallback(async (from: string, to: string, clientId: string, slugSearch: string) => {
+  const fetchStats = useCallback(async (from: string, to: string, clientId: string, slugSearch: string, adAccount: string) => {
     setLoadingStats(true);
     const params = new URLSearchParams();
     if (from)       params.set('from', from);
     if (to)         params.set('to', to);
     if (clientId)   params.set('client_id', clientId);
     if (slugSearch) params.set('slug_search', slugSearch);
+    if (adAccount)  params.set('ad_account_id', adAccount);
     const res = await fetch(`/api/admin/marketing?${params}`);
     if (res.status === 401) { adminLogout(); return; }
     const json = await res.json();
@@ -916,8 +924,8 @@ function MarketingPanel() {
 
   useEffect(() => { fetchClients(); }, [fetchClients]);
   useEffect(() => {
-    fetchStats(allTime ? '' : fromDate, allTime ? '' : toDate, selectedClient, overviewSlugSearch);
-  }, [fromDate, toDate, allTime, selectedClient, overviewSlugSearch, fetchStats]);
+    fetchStats(allTime ? '' : fromDate, allTime ? '' : toDate, selectedClient, overviewSlugSearch, adAccountFilter);
+  }, [fromDate, toDate, allTime, selectedClient, overviewSlugSearch, adAccountFilter, fetchStats]);
   useEffect(() => { fetchPixels(); }, [fetchPixels]);
   useEffect(() => { if (tab === 'campaigns') fetchPxList(pixelSlugSearch, pixelClientFilter, pxListPage); }, [tab, pixelSlugSearch, pixelClientFilter, pxListPage, fetchPxList]);
 
@@ -925,7 +933,7 @@ function MarketingPanel() {
     setSaving(true);
     const body = {
       slug: form.slug, label: form.label, pixel_id: form.pixel_id,
-      access_token: form.access_token,
+      access_token: form.access_token, ad_account_id: form.ad_account_id || null,
       is_default: false, client_id: form.client_id,
     };
     console.log('[handleSavePixel] body:', JSON.stringify({ ...body, access_token: '***' }));
@@ -939,7 +947,7 @@ function MarketingPanel() {
       setShowPixelForm(false); setEditPixel(null);
       fetchPixels();
       fetchPxList(pixelSlugSearch, pixelClientFilter, pxListPage);
-      fetchStats(allTime ? '' : fromDate, allTime ? '' : toDate, selectedClient, overviewSlugSearch);
+      fetchStats(allTime ? '' : fromDate, allTime ? '' : toDate, selectedClient, overviewSlugSearch, adAccountFilter);
     } else { alert(json.message ?? 'Error saving pixel'); }
   }
 
@@ -949,7 +957,7 @@ function MarketingPanel() {
     if (json.success) {
       setDeleteConfirm(null); fetchPixels();
       fetchPxList(pixelSlugSearch, pixelClientFilter, pxListPage);
-      fetchStats(allTime ? '' : fromDate, allTime ? '' : toDate, selectedClient, overviewSlugSearch);
+      fetchStats(allTime ? '' : fromDate, allTime ? '' : toDate, selectedClient, overviewSlugSearch, adAccountFilter);
     } else { alert(json.message ?? 'Delete failed'); }
   }
 
@@ -1012,7 +1020,7 @@ function MarketingPanel() {
               </div>
             ))}
 
-            <select value={selectedClient} onChange={(e) => { setSelectedClient(e.target.value); }}
+            <select value={selectedClient} onChange={(e) => { setSelectedClient(e.target.value); setAdAccountFilter(''); }}
               className="px-3 py-1.5 rounded-[8px] text-[11px] font-semibold outline-none focus:ring-2 focus:ring-amber-200"
               style={{
                 background: selectedClient ? BLUE_LT : '#FAF8F4',
@@ -1023,6 +1031,28 @@ function MarketingPanel() {
               <option value="">All MediaBuyers</option>
               {clients.map((c) => <option key={c.id} value={String(c.id)}>{c.name}</option>)}
             </select>
+
+            {/* Ad Account filter — scoped to selected media buyer */}
+            {(() => {
+              const filteredPixels = selectedClient
+                ? pixels.filter((p) => String(p.client_id) === selectedClient)
+                : pixels;
+              return filteredPixels.some((p) => p.ad_account_id) ? (
+                <select value={adAccountFilter} onChange={(e) => setAdAccountFilter(e.target.value)}
+                  className="px-3 py-1.5 rounded-[8px] text-[11px] font-semibold outline-none focus:ring-2 focus:ring-amber-200"
+                  style={{
+                    background: adAccountFilter ? '#FFF7ED' : '#FAF8F4',
+                    border: `1.5px solid ${adAccountFilter ? '#F97316' : '#E6E0D6'}`,
+                    color: adAccountFilter ? '#C2410C' : '#776D62',
+                    cursor: 'pointer',
+                  }}>
+                  <option value="">All Ad Accounts</option>
+                  {[...new Set(filteredPixels.map((p) => p.ad_account_id).filter((a): a is string => !!a))].map((a) => (
+                    <option key={a} value={a}>{a}</option>
+                  ))}
+                </select>
+              ) : null;
+            })()}
 
             {/* Slug search */}
             <div className="relative">
@@ -1042,8 +1072,8 @@ function MarketingPanel() {
               />
             </div>
 
-            {(selectedClient || overviewSlugSearch) && (
-              <button onClick={() => { setSelectedClient(''); setOverviewSlugSearch(''); }}
+            {(selectedClient || overviewSlugSearch || adAccountFilter) && (
+              <button onClick={() => { setSelectedClient(''); setOverviewSlugSearch(''); setAdAccountFilter(''); }}
                 className="px-2.5 py-1.5 rounded-[8px] text-[11px] font-semibold text-stone-500 hover:bg-stone-100 transition-colors"
                 style={{ border: '1.5px solid #E6E0D6' }}>
                 Clear
@@ -1088,7 +1118,7 @@ function MarketingPanel() {
             </div>
 
             {brkTab === 'campaign' && (
-              <BreakdownTable title="By Campaign" cols={['Campaign', 'MediaBuyer', 'Pixel', 'Purchases', 'CAPI', 'Issues']}
+              <BreakdownTable title="By Campaign" cols={['Campaign', 'MediaBuyer', 'Pixel / Ad Account', 'Purchases', 'CAPI', 'Issues']}
                 loading={loadingStats} empty={byPixel.length === 0} emptyMsg="No pixels configured yet.">
                 {byPixel.map((row) => (
                   <tr key={row.id} className="hover:bg-amber-50 transition-colors" style={{ borderBottom: '1px solid #FAF8F4' }}>
@@ -1103,6 +1133,11 @@ function MarketingPanel() {
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-[10px] text-stone-400 font-mono block">{row.pixel_id}</span>
+                      {row.ad_account_id && (
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded mt-1 inline-block" style={{ background: '#FFF7ED', color: '#C2410C', border: '1px solid #FED7AA' }}>
+                          {row.ad_account_id}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-[13px] font-black text-stone-800">{row.purchases}</td>
                     <td className="px-4 py-3 text-[12px] font-bold text-stone-900">{row.capi_sent}</td>
@@ -1117,7 +1152,7 @@ function MarketingPanel() {
             )}
 
             {brkTab === 'meta' && (
-              <BreakdownTable title="By Meta Campaign" cols={['Meta Cmp Name / ID', 'Campaign', 'MediaBuyer', 'Pixel', 'Purchases', 'CAPI', 'Issues']}
+              <BreakdownTable title="By Meta Campaign" cols={['Meta Cmp Name / ID', 'Campaign', 'MediaBuyer', 'Pixel / Ad Account', 'Purchases', 'CAPI', 'Issues']}
                 loading={loadingStats} empty={byMetaCampaign.length === 0} emptyMsg="No Meta campaign data yet.">
                 {byMetaCampaign.map((row) => (
                   <tr key={row.meta_campaign_id} className="hover:bg-amber-50 transition-colors" style={{ borderBottom: '1px solid #FAF8F4' }}>
@@ -1140,6 +1175,11 @@ function MarketingPanel() {
                     </td>
                     <td className="px-4 py-3">
                       <span className="text-[10px] text-stone-400 font-mono block">{row.pixel_id ?? '—'}</span>
+                      {row.ad_account_id && (
+                        <span className="text-[10px] font-mono px-1.5 py-0.5 rounded mt-1 inline-block" style={{ background: '#FFF7ED', color: '#C2410C', border: '1px solid #FED7AA' }}>
+                          {row.ad_account_id}
+                        </span>
+                      )}
                     </td>
                     <td className="px-4 py-3 text-[13px] font-black text-stone-800">{row.purchases}</td>
                     <td className="px-4 py-3 text-[12px] font-bold text-stone-900">{row.capi_sent}</td>
@@ -1220,7 +1260,7 @@ function MarketingPanel() {
           {editPixel && (
             <PixelForm
               initial={{ slug: editPixel.slug, label: editPixel.label, pixel_id: editPixel.pixel_id,
-                access_token: editPixel.access_token,
+                access_token: editPixel.access_token, ad_account_id: editPixel.ad_account_id ?? '',
                 client_id: editPixel.client_id ? String(editPixel.client_id) : '' }}
               onSave={handleSavePixel} onCancel={() => setEditPixel(null)} saving={saving} clients={clients}
             />
@@ -1284,6 +1324,11 @@ function MarketingPanel() {
                       <span className="text-[10px] text-stone-400 font-mono px-2 py-0.5 rounded" style={{ background: '#FAF8F4', border: '1px solid #E6E0D6' }}>
                         Pixel: {px.pixel_id}
                       </span>
+                      {px.ad_account_id && (
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded" style={{ background: '#FFF7ED', color: '#C2410C', border: '1px solid #FED7AA' }}>
+                          Act: {px.ad_account_id}
+                        </span>
+                      )}
                     </div>
                   </div>
                   <div className="flex items-center gap-2 shrink-0">
@@ -1852,6 +1897,11 @@ export default function AdminDashboard() {
                                 {row.pixel_id && (
                                   <span className="text-[9px] font-mono text-stone-400">Pixel: {row.pixel_id}</span>
                                 )}
+                                {row.ad_account_id && (
+                                  <span className="text-[9px] font-mono px-1.5 py-0.5 rounded inline-block w-fit" style={{ background: '#FFF7ED', color: '#C2410C', border: '1px solid #FED7AA' }}>
+                                    {row.ad_account_id}
+                                  </span>
+                                )}
                               </div>
                             ) : (
                               <span className="text-[12px] text-stone-300">—</span>
@@ -1903,7 +1953,7 @@ export default function AdminDashboard() {
                               <span className="text-[12px] text-stone-300">—</span>
                             )}
                           </td>
-                          <td className="px-5 py-3.5"><span className="whitespace-nowrap text-[11px] text-stone-400">{formatDate(row.date_time)}</span></td>
+                          <td className="px-5 py-3.5"><span className="text-[11px] text-stone-400 whitespace-nowrap">{formatDate(row.date_time)}</span></td>
                         </tr>
                       ))
                     )}

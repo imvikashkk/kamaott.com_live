@@ -157,9 +157,10 @@ export default function OtpPage() {
     }
   };
 
-  // Full number (grouped 5 + 5) so the user can spot a typo before waiting for the SMS
-  const displayMobile =
-    mobile.length === 10 ? `+91 ${mobile.slice(0, 5)} ${mobile.slice(5)}` : `+91 ${mobile}`;
+  const maskedMobile =
+    mobile.length >= 10
+      ? `+91 ${mobile.slice(0, 2)}XXXXXX${mobile.slice(-2)}`
+      : `+91 ${mobile}`;
 
   return (
     <AuthShell>
@@ -199,7 +200,7 @@ export default function OtpPage() {
             <>
               We’ve sent a 6-digit code to
               <br />
-              <span className="whitespace-nowrap text-white">{displayMobile}</span>{' '}
+              <span className="text-white">{maskedMobile}</span>{' '}
               <button
                 type="button"
                 onClick={() => router.back()}

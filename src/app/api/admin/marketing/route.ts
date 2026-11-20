@@ -13,6 +13,7 @@ export async function GET(req: NextRequest) {
   const to           = validDate(url.searchParams.get('to'));
   const clientId     = url.searchParams.get('client_id')     || '';
   const slugSearch   = url.searchParams.get('slug_search')   || '';
+  const adAccountId  = url.searchParams.get('ad_account_id') || '';
 
   // Date-range conditions
   const datePayConds: string[] = [];
@@ -25,6 +26,7 @@ export async function GET(req: NextRequest) {
   const pixelFilters: string[] = [];
   if (clientId)    pixelFilters.push(`p.client_id = ${parseInt(clientId)}`);
   if (slugSearch)  pixelFilters.push(`p.slug ILIKE '%${slugSearch.replace(/'/g, "''")}%'`);
+  if (adAccountId) pixelFilters.push(`p.ad_account_id = '${adAccountId.replace(/'/g, "''")}'`);
   const pixelWhere = pixelFilters.length ? `AND ${pixelFilters.join(' AND ')}` : '';
 
   // Payment-level WHERE (for overview — unaliased, no JOINs in that query)
@@ -33,6 +35,7 @@ export async function GET(req: NextRequest) {
   if (to)   overviewConds.push(`(created_at AT TIME ZONE 'Asia/Kolkata')::date <= '${to}'::date`);
   if (clientId)    overviewConds.push(`campaign_slug IN (SELECT slug FROM pixels WHERE client_id = ${parseInt(clientId)})`);
   if (slugSearch)  overviewConds.push(`campaign_slug ILIKE '%${slugSearch.replace(/'/g, "''")}%'`);
+  if (adAccountId) overviewConds.push(`campaign_slug IN (SELECT slug FROM pixels WHERE ad_account_id = '${adAccountId.replace(/'/g, "''")}')`);
   const overviewWhere = overviewConds.join(' AND ');
 
   // Same conditions but with `pay.` qualifier — used in queries that JOIN pixels (avoids ambiguous `created_at`)
@@ -41,6 +44,7 @@ export async function GET(req: NextRequest) {
   if (to)   metaConds.push(`(pay.created_at AT TIME ZONE 'Asia/Kolkata')::date <= '${to}'::date`);
   if (clientId)    metaConds.push(`pay.campaign_slug IN (SELECT slug FROM pixels WHERE client_id = ${parseInt(clientId)})`);
   if (slugSearch)  metaConds.push(`pay.campaign_slug ILIKE '%${slugSearch.replace(/'/g, "''")}%'`);
+  if (adAccountId) metaConds.push(`pay.campaign_slug IN (SELECT slug FROM pixels WHERE ad_account_id = '${adAccountId.replace(/'/g, "''")}')`);
   const metaWhere = metaConds.join(' AND ');
 
   try {
@@ -60,6 +64,7 @@ export async function GET(req: NextRequest) {
           p.slug,
           p.label,
           p.pixel_id,
+          p.ad_account_id,
           p.client_id,
           c.name AS client_name,
           COUNT(pay.id)                                            AS purchases,
@@ -69,7 +74,7 @@ export async function GET(req: NextRequest) {
         LEFT JOIN clients c ON c.id = p.client_id
         LEFT JOIN payments pay ON pay.campaign_slug = p.slug AND ${joinFilter}
         WHERE 1=1 ${pixelWhere}
-        GROUP BY p.id, p.slug, p.label, p.pixel_id, p.client_id, c.name
+        GROUP BY p.id, p.slug, p.label, p.pixel_id, p.ad_account_id, p.client_id, c.name
         ORDER BY purchases DESC
       `),
       pool.query(`
@@ -79,6 +84,7 @@ export async function GET(req: NextRequest) {
           pay.campaign_slug,
           p.label        AS pixel_label,
           p.pixel_id,
+          p.ad_account_id,
           c.name         AS client_name,
           COUNT(pay.id)                                            AS purchases,
           COUNT(pay.id) FILTER (WHERE pay.capi_sent = true)      AS capi_sent,
@@ -88,7 +94,7 @@ export async function GET(req: NextRequest) {
         LEFT JOIN clients c ON c.id = p.client_id
         WHERE ${metaWhere}
           AND pay.meta_campaign_id IS NOT NULL
-        GROUP BY pay.meta_campaign_id, pay.meta_campaign_name, pay.campaign_slug, p.label, p.pixel_id, c.name
+        GROUP BY pay.meta_campaign_id, pay.meta_campaign_name, pay.campaign_slug, p.label, p.pixel_id, p.ad_account_id, c.name
         ORDER BY purchases DESC
       `),
     ]);

@@ -125,6 +125,7 @@ export async function GET(req: NextRequest) {
            p.campaign_slug,
            c.name          AS media_buyer_name,
            px.pixel_id,
+           px.ad_account_id,
            p.meta_campaign_id,
            p.meta_campaign_name,
            p.meta_adset_id,

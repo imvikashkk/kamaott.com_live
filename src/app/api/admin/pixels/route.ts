@@ -26,10 +26,10 @@ export async function GET(req: NextRequest) {
     if (search) {
       params.push(`%${search}%`);
       const i = params.length;
-      conds.push(`(px.slug ILIKE $${i} OR px.label ILIKE $${i} OR px.pixel_id ILIKE $${i})`);
+      conds.push(`(px.slug ILIKE $${i} OR px.label ILIKE $${i} OR px.pixel_id ILIKE $${i} OR COALESCE(px.ad_account_id,'') ILIKE $${i})`);
     }
     const where = conds.length ? `WHERE ${conds.join(' AND ')}` : '';
-    const baseSelect = `SELECT px.id, px.slug, px.label, px.pixel_id, px.access_token,
+    const baseSelect = `SELECT px.id, px.slug, px.label, px.pixel_id, px.access_token, px.ad_account_id,
             px.is_default, px.client_id, px.created_at, c.name AS client_name
      FROM pixels px LEFT JOIN clients c ON c.id = px.client_id ${where}`;
 
@@ -54,7 +54,7 @@ export async function POST(req: NextRequest) {
   if (!authCheck(req)) return NextResponse.json({ success: false }, { status: 401 });
 
   try {
-    const { slug, label, pixel_id, access_token, is_default = false, client_id } = await req.json();
+    const { slug, label, pixel_id, access_token, ad_account_id = null, is_default = false, client_id } = await req.json();
 
     if (!slug || !label || !pixel_id || !access_token) {
       return NextResponse.json({ success: false, message: 'slug, label, pixel_id, access_token required' }, { status: 400 });
@@ -72,10 +72,10 @@ export async function POST(req: NextRequest) {
       }
 
       const res = await client.query(
-        `INSERT INTO pixels (slug, label, pixel_id, access_token, is_default, client_id)
-         VALUES ($1, $2, $3, $4, $5, $6)
-         RETURNING id, slug, label, pixel_id, is_default, client_id, created_at`,
-        [slug.toLowerCase().trim(), label.trim(), pixel_id.trim(), access_token.trim(), is_default, parseInt(client_id)],
+        `INSERT INTO pixels (slug, label, pixel_id, access_token, ad_account_id, is_default, client_id)
+         VALUES ($1, $2, $3, $4, $5, $6, $7)
+         RETURNING id, slug, label, pixel_id, ad_account_id, is_default, client_id, created_at`,
+        [slug.toLowerCase().trim(), label.trim(), pixel_id.trim(), access_token.trim(), ad_account_id, is_default, parseInt(client_id)],
       );
 
       await client.query('COMMIT');

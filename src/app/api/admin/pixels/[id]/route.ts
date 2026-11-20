@@ -16,7 +16,7 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   try {
     const body = await req.json();
     console.log('[pixels PUT] received body:', JSON.stringify(body));
-    const { slug, label, pixel_id, access_token, is_default, client_id } = body;
+    const { slug, label, pixel_id, access_token, ad_account_id = null, is_default, client_id } = body;
 
     if (!client_id) {
       return NextResponse.json({ success: false, message: 'client_id (user) is required' }, { status: 400 });
@@ -32,12 +32,12 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
 
       const res = await client.query(
         `UPDATE pixels
-         SET slug=$1, label=$2, pixel_id=$3, access_token=$4, is_default=$5, client_id=$6, updated_at=NOW()
-         WHERE id=$7
-         RETURNING id, slug, label, pixel_id, is_default, client_id`,
+         SET slug=$1, label=$2, pixel_id=$3, access_token=$4, ad_account_id=$5, is_default=$6, client_id=$7, updated_at=NOW()
+         WHERE id=$8
+         RETURNING id, slug, label, pixel_id, ad_account_id, is_default, client_id`,
         [
           slug.toLowerCase().trim(), label.trim(), pixel_id.trim(), access_token.trim(),
-          Boolean(is_default), parseInt(client_id), pixelId,
+          ad_account_id, Boolean(is_default), parseInt(client_id), pixelId,
         ],
       );
 

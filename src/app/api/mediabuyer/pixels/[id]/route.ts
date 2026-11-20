@@ -15,16 +15,16 @@ export async function PUT(req: NextRequest, { params }: { params: Promise<{ id: 
   if (isNaN(pixelId)) return NextResponse.json({ success: false, message: 'Invalid id' }, { status: 400 });
 
   try {
-    const { slug, label, pixel_id, access_token } = await req.json();
+    const { slug, label, pixel_id, access_token, ad_account_id = null } = await req.json();
     if (!slug || !label || !pixel_id || !access_token)
       return NextResponse.json({ success: false, message: 'slug, label, pixel_id, access_token required' }, { status: 400 });
 
     const res = await pool.query(
       `UPDATE pixels
-       SET slug=$1, label=$2, pixel_id=$3, access_token=$4, updated_at=NOW()
-       WHERE id=$5 AND client_id=$6
-       RETURNING id, slug, label, pixel_id, is_default, client_id`,
-      [slug.toLowerCase().trim(), label.trim(), pixel_id.trim(), access_token.trim(), pixelId, clientId],
+       SET slug=$1, label=$2, pixel_id=$3, access_token=$4, ad_account_id=$5, updated_at=NOW()
+       WHERE id=$6 AND client_id=$7
+       RETURNING id, slug, label, pixel_id, ad_account_id, is_default, client_id`,
+      [slug.toLowerCase().trim(), label.trim(), pixel_id.trim(), access_token.trim(), ad_account_id, pixelId, clientId],
     );
     if (res.rowCount === 0) return NextResponse.json({ success: false, message: 'Not found' }, { status: 404 });
     return NextResponse.json({ success: true, data: res.rows[0] });
